@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <title>IQ কুইজ</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--accent:#1976d2;--green:#4caf50;--red:#f44336;--orange:#ff9800}
+    body{font-family: Arial, sans-serif;margin:0; padding:0; background:#f5f7fb; color:#222;}
+    header{background:var(--accent); color:white; padding:12px 16px; text-align:center}
+    .container{max-width:900px; margin:18px auto; padding:12px;}
+    .card{background:white; padding:14px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:14px;}
+    input[type="text"], input[type="password"], input[type="email"], textarea, select {
+      width:100%; box-sizing:border-box; padding:8px; margin:8px 0; border-radius:6px; border:1px solid #ccc;
+    }
+    button{padding:10px 14px; border:none; border-radius:6px; cursor:pointer;}
+    .btn-primary{background:var(--accent); color:white}
+    .btn-green{background:var(--green); color:white}
+    .btn-red{background:var(--red); color:white}
+    .btn-orange{background:var(--orange); color:white}
+    nav button{margin-right:8px}
+    .small{font-size:13px; color:#555}
+    .row{display:flex; gap:12px; align-items:center}
+    .col{flex:1}
+    img.profile-preview{width:84px; height:84px; object-fit:cover; border-radius:50%; border:2px solid #ddd}
+    .levels-list{display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:8px}
+    .level-item{background:#fafafa; padding:10px; border-radius:6px; text-align:center; border:1px solid #eee}
+    .locked{opacity:0.5}
+    .footer-note{font-size:13px; color:#666; margin-top:8px}
+    table{width:100%; border-collapse:collapse; margin-top:10px}
+    th,td{padding:10px; text-align:left; border-bottom:1px solid #ddd}
+    th{background:#f5f5f5}
+    .tab-container{margin-top:10px}
+    .tab-buttons{display:flex; border-bottom:1px solid #ddd}
+    .tab-button{padding:10px 15px; background:none; border:none; cursor:pointer; border-bottom:2px solid transparent}
+    .tab-button.active{background:#f5f5f5; border-bottom-color:var(--accent)}
+    .tab-content{display:none; padding:15px 0}
+    .tab-content.active{display:block}
+    .admin-only{display:none}
+    .question-item{margin-bottom:15px; padding:10px; border:1px solid #eee; border-radius:5px}
+    .stats-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px}
+    .stat-card{background:#f9f9f9; padding:15px; border-radius:5px; text-align:center}
+    .stat-value{font-size:24px; font-weight:bold; color:var(--accent)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>IQ কুইজ</h1>
+  </header>
+
+  <div class="container">
+    <!-- LOGIN -->
+    <div id="page-login" class="card">
+      <h2>লগইন</h2>
+      <input id="login-username" type="text" placeholder="ইউজারনেম">
+      <input id="login-password" type="password" placeholder="পাসওয়ার্ড">
+      <div class="row">
+        <button type="button" class="btn-primary" onclick="doLogin()">লগইন</button>
+        <button type="button" onclick="showPage('page-register')">রেজিস্টার</button>
+      </div>
+      <p class="small">নতুন? রেজিস্টার করুন।</p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="page-register" class="card" style="display:none">
+      <h2>রেজিস্ট্রেশন</h2>
+      <input id="reg-name" type="text" placeholder="নাম">
+      <input id="reg-username" type="text" placeholder="ইউজারনেম">
+      <input id="reg-email" type="email" placeholder="ইমেইল / ফোন">
+      <input id="reg-pass" type="password" placeholder="পাসওয়ার্ড">
+      <input id="reg-pass2" type="password" placeholder="পাসওয়ার্ড নিশ্চিত করুন">
+      <div class="row">
+        <button type="button" class="btn-primary" onclick="doRegister()">রেজিস্টার</button>
+        <button type="button" onclick="showPage('page-login')">লগইনে ফিরে যান</button>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <div id="page-home" class="card" style="display:none">
+      <h2>হোম</h2>
+      <p id="welcome-text"></p>
+
+      <nav>
+        <button type="button" onclick="showSection('section-quiz')" class="btn-primary">কুইজ শুরু</button>
+        <button type="button" onclick="showSection('section-profile')">প্রোফাইল</button>
+        <button type="button" onclick="showSection('section-admin')" class="admin-only btn-orange">এডমিন</button>
+        <button type="button" onclick="doLogout()">লগআউট</button>
+      </nav>
+
+      <!-- QUIZ SECTION -->
+      <div id="section-quiz" style="margin-top:12px; display:none;">
+        <div class="card">
+          <h3>লেভেল নির্বাচন</h3>
+          <p class="small">প্রতিটি লেভেল আনলক করতে আগের লেভেল শেষ করতে হবে।</p>
+          <div id="levels" class="levels-list"></div>
+        </div>
+
+        <div id="quiz-card" class="card" style="display:none;">
+          <h3 id="quiz-title">Level ?</h3>
+          <div id="q-area"></div>
+          <div class="row" style="margin-top:8px;">
+            <button type="button" class="btn-green" onclick="submitAnswers()">সাবমিট</button>
+            <button type="button" onclick="closeQuizView()">বাতিল</button>
+          </div>
+          <p id="quiz-msg" class="small"></p>
+        </div>
+      </div>
+
+      <!-- PROFILE SECTION -->
+      <div id="section-profile" style="margin-top:12px; display:none;">
+        <div class="card row">
+          <div style="max-width:140px; text-align:center">
+            <img id="profile-pic" class="profile-preview" src="" alt="প্রোফাইল"/>
+            <div style="margin-top:8px">
+              <input type="file" id="pic-file" accept="image/*" onchange="uploadPic(event)">
+            </div>
+          </div>
+          <div class="col">
+            <p><b>নাম:</b> <span id="p-name"></span></p>
+            <p><b>ইউজারনেম:</b> <span id="p-user"></span></p>
+            <p><b>ইমেইল:</b> <span id="p-email"></span></p>
+            <p><b>বর্তমান লেভেল:</b> <span id="p-level"></span></p>
+            <p><b>সঠিক উত্তর:</b> <span id="p-correct"></span></p>
+            <p><b>পয়েন্ট:</b> <span id="p-points"></span></p>
+            <div style="margin-top:8px">
+              <button type="button" onclick="resetProgress()">রিসেট</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN SECTION -->
+      <div id="section-admin" style="margin-top:12px; display:none;">
+        <div class="card">
+          <h3>এডমিন প্যানেল</h3>
+          
+          <div class="tab-container">
+            <div class="tab-buttons">
+              <button class="tab-button active" onclick="openAdminTab('stats')">পরিসংখ্যান</button>
+              <button class="tab-button" onclick="openAdminTab('users')">ব্যবহারকারী</button>
+              <button class="tab-button" onclick="openAdminTab('questions')">প্রশ্ন ব্যবস্থাপনা</button>
+            </div>
+            
+            <div id="tab-stats" class="tab-content active">
+              <h4>সামগ্রিক পরিসংখ্যান</h4>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-value" id="total-users">0</div>
+                  <div>মোট ব্যবহারকারী</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value" id="total-questions">0</div>
+                  <div>মোট প্রশ্ন</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value" id="avg-score">0%</div>
+                  <div>গড় স্কোর</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-value" id="max-level">0</div>
+                  <div>সর্বোচ্চ লেভেল</div>
+                </div>
+              </div>
+              
+              <h4 style="margin-top:20px">ব্যবহারকারী অগ্রগতি</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>নাম</th>
+                    <th>ইউজারনেম</th>
+                    <th>বর্তমান লেভেল</th>
+                    <th>সঠিক উত্তর</th>
+                    <th>পয়েন্ট</th>
+                    <th>শেষ লগইন</th>
+                  </tr>
+                </thead>
+                <tbody id="user-progress-table">
+                </tbody>
+              </table>
+            </div>
+            
+            <div id="tab-users" class="tab-content">
+              <h4>ব্যবহারকারী ব্যবস্থাপনা</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>নাম</th>
+                    <th>ইউজারনেম</th>
+                    <th>ইমেইল</th>
+                    <th>পয়েন্ট</th>
+                    <th>অ্যাকশন</th>
+                  </tr>
+                </thead>
+                <tbody id="user-management-table">
+                </tbody>
+              </table>
+              
+              <div style="margin-top:15px">
+                <button class="btn-primary" onclick="addNewUser()">নতুন ব্যবহারকারী যোগ করুন</button>
+              </div>
+            </div>
+            
+            <div id="tab-questions" class="tab-content">
+              <h4>প্রশ্ন ব্যবস্থাপনা</h4>
+              
+              <div style="margin-bottom:15px">
+                <select id="level-select" onchange="loadQuestionsForLevel()">
+                  <option value="">লেভেল নির্বাচন করুন</option>
+                </select>
+              </div>
+              
+              <div id="questions-list">
+                <!-- Questions will be loaded here -->
+              </div>
+              
+              <div style="margin-top:15px">
+                <button class="btn-primary" onclick="addNewQuestion()">নতুন প্রশ্ন যোগ করুন</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* --- Data: custom questions --- */
+const TOTAL_LEVELS = 10;
+const POINTS_PER_QUESTION = 20;
+
+function generateQuestions(){
+  return [
+    {
+      level:1,
+      qs:[
+        {en:"If all roses are flowers and some flowers fade quickly, can we say some roses fade quickly? (Yes/No)", 
+         bn:"যদি সব গোলাপ ফুল হয় এবং কিছু ফুল দ্রুত শুকিয়ে যায়, তবে কি বলা যায় কিছু গোলাপ দ্রুত শুকিয়ে যায়? (হ্যাঁ/না)", 
+         answer:"no"},
+        {en:"What comes next in the sequence: 2, 6, 12, 20, ?", 
+         bn:"ধারাবাহিকতায় পরের সংখ্যা কী হবে: ২, ৬, ১২, ২০, ?", 
+         answer:"30"}
+      ]
+    },
+    {
+      level:2,
+      qs:[
+        {en:"Rearrange the letters 'CIFAIPC' to form a meaningful word.", 
+         bn:"অক্ষরগুলো সাজান: 'CIFAIPC' → একটি অর্থপূর্ণ শব্দ তৈরি করুন।", 
+         answer:"pacific"},
+        {en:"A bat and a ball cost $1.10. The bat costs $1 more than the ball. How much is the ball?", 
+         bn:"একটি ব্যাট আর একটি বলের দাম $1.10। ব্যাট বলের চেয়ে $1 বেশি দামি। বলের দাম কত?", 
+         answer:"0.05"}
+      ]
+    }
+    // Add more levels as needed
+  ];
+}
+const QUESTIONS = generateQuestions();
+
+/* --- Registration, Login, Profile functions --- */
+function showPage(id){
+  ['page-login','page-register','page-home'].forEach(p=>{
+    document.getElementById(p).style.display = (p===id ? '' : 'none');
+  });
+  if(id==='page-home') showSection('section-quiz');
+}
+function showSection(id){
+  ['section-quiz','section-profile','section-admin'].forEach(s=>{
+    document.getElementById(s).style.display = (s===id ? '' : 'none');
+  });
+  if(id==='section-profile') renderProfile();
+  if(id==='section-quiz') renderLevels();
+  if(id==='section-admin') renderAdminPanel();
+}
+function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const username=document.getElementById('reg-username').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  if(!name||!username||!email||!pass){alert('সব ফিল্ড পূরণ করুন');return;}
+  if(pass!==pass2){alert('পাসওয়ার্ড মিলছে না');return;}
+  
+  // Check if username already exists
+  const existingUsers = JSON.parse(localStorage.getItem('iq_users') || '[]');
+  if (existingUsers.some(user => user.username === username)) {
+    alert('এই ইউজারনেমটি ইতিমধ্যে নেওয়া হয়েছে');
+    return;
+  }
+  
+  const user={name,username,email,pass,pic:null, isAdmin: false, lastLogin: new Date().toISOString()};
+  existingUsers.push(user);
+  localStorage.setItem('iq_users',JSON.stringify(existingUsers));
+  
+  const progress={currentLevel:1,correctCount:0,points:0,levels:{}};
+  const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+  allProgress[username] = progress;
+  localStorage.setItem('iq_progress',JSON.stringify(allProgress));
+  
+  alert('রেজিস্ট্রেশন সফল! লগইন করুন।');showPage('page-login');
+}
+function doLogin(){
+  const username=document.getElementById('login-username').value.trim();
+  const pass=document.getElementById('login-password').value;
+  const users=JSON.parse(localStorage.getItem('iq_users')||'[]');
+  const user = users.find(u => u.username === username && u.pass === pass);
+  
+  if(!user){alert('ভুল লগইন');return;}
+  
+  // Update last login
+  user.lastLogin = new Date().toISOString();
+  localStorage.setItem('iq_users', JSON.stringify(users));
+  
+  // Set current user
+  localStorage.setItem('current_user', JSON.stringify(user));
+  
+  setupHomeUI();showPage('page-home');
+}
+function setupHomeUI(){
+  const user=JSON.parse(localStorage.getItem('current_user')||'null');
+  if(user) {
+    document.getElementById('welcome-text').innerText=`স্বাগতম, ${user.name} (${user.username})`;
+    
+    // Show admin button if user is admin
+    const adminButtons = document.querySelectorAll('.admin-only');
+    adminButtons.forEach(btn => {
+      btn.style.display = user.isAdmin ? 'inline-block' : 'none';
+    });
+  }
+}
+function renderProfile(){
+  const user=JSON.parse(localStorage.getItem('current_user')||'null');
+  const allProgress=JSON.parse(localStorage.getItem('iq_progress')||'{}');
+  const progress = allProgress[user.username] || {currentLevel:1,correctCount:0,points:0,levels:{}};
+  
+  if(!user)return;
+  document.getElementById('p-name').innerText=user.name;
+  document.getElementById('p-user').innerText=user.username;
+  document.getElementById('p-email').innerText=user.email;
+  document.getElementById('p-level').innerText=progress.currentLevel||1;
+  document.getElementById('p-correct').innerText=progress.correctCount||0;
+  document.getElementById('p-points').innerText=progress.points||0;
+  document.getElementById('profile-pic').src=user.pic||defaultAvatar();
+}
+function defaultAvatar(){return 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#eee" width="100%" height="100%"/><circle cx="100" cy="70" r="40" fill="#ddd"/><rect x="50" y="120" width="100" height="50" fill="#ddd"/></svg>`);}
+function uploadPic(ev){const file=ev.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(e){const data=e.target.result;const user=JSON.parse(localStorage.getItem('current_user')||'null');if(user){user.pic=data;const users=JSON.parse(localStorage.getItem('iq_users')||'[]');const index=users.findIndex(u=>u.username===user.username);if(index!==-1){users[index]=user;localStorage.setItem('iq_users',JSON.stringify(users));localStorage.setItem('current_user',JSON.stringify(user));}renderProfile();alert('ছবি আপডেট হয়েছে');}};reader.readAsDataURL(file);}
+function doLogout(){showPage('page-login');document.getElementById('login-username').value='';document.getElementById('login-password').value='';}
+function renderLevels(){
+  const container=document.getElementById('levels');container.innerHTML='';
+  const user=JSON.parse(localStorage.getItem('current_user')||'null');
+  const allProgress=JSON.parse(localStorage.getItem('iq_progress')||'{}');
+  const progress = allProgress[user.username] || {currentLevel:1,levels:{}};
+  const unlocked=progress.currentLevel||1;
+  for(let i=1;i<=TOTAL_LEVELS;i++){
+    const div=document.createElement('div');
+    div.className='level-item'+(i>unlocked?' locked':'');
+    div.innerHTML=`<strong>Level ${i}</strong><div class="small">2 প্রশ্ন</div><div class="small">${2 * POINTS_PER_QUESTION} পয়েন্ট</div>`;
+    if(i<=unlocked){
+      const btn=document.createElement('button');btn.type="button";btn.textContent='খেলা শুরু';btn.style.marginTop='8px';btn.onclick=()=>openLevel(i);div.appendChild(btn);
+    }else{const span=document.createElement('div');span.className='small';span.style.marginTop='8px';span.textContent='লক';div.appendChild(span);}
+    container.appendChild(div);
+  }
+}
+
+/* --- Admin Functions --- */
+function renderAdminPanel() {
+  const user = JSON.parse(localStorage.getItem('current_user') || 'null');
+  if (!user || !user.isAdmin) {
+    alert('আপনার এডমিন অ্যাক্সেস নেই');
+    showSection('section-quiz');
+    return;
+  }
+  
+  // Load statistics
+  loadAdminStats();
+  
+  // Load user management table
+  loadUserManagementTable();
+  
+  // Initialize level selector for questions
+  initializeLevelSelector();
+}
+
+function openAdminTab(tabName) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.classList.remove('active');
+  });
+  
+  // Show the selected tab content
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+  
+  // Add active class to the clicked button
+  event.target.classList.add('active');
+}
+
+function loadAdminStats() {
+  const users = JSON.parse(localStorage.getItem('iq_users') || '[]');
+  const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+  const questions = JSON.parse(localStorage.getItem('iq_questions') || JSON.stringify(QUESTIONS));
+  
+  // Total users
+  document.getElementById('total-users').textContent = users.length;
+  
+  // Total questions
+  let totalQuestions = 0;
+  questions.forEach(level => {
+    totalQuestions += level.qs.length;
+  });
+  document.getElementById('total-questions').textContent = totalQuestions;
+  
+  // Average score
+  let totalCorrect = 0;
+  let totalPossible = 0;
+  users.forEach(user => {
+    const progress = allProgress[user.username] || {correctCount: 0};
+    totalCorrect += progress.correctCount || 0;
+    totalPossible += (progress.currentLevel || 1) * 2; // Assuming 2 questions per level
+  });
+  
+  const avgScore = totalPossible > 0 ? Math.round((totalCorrect / totalPossible) * 100) : 0;
+  document.getElementById('avg-score').textContent = `${avgScore}%`;
+  
+  // Max level
+  let maxLevel = 1;
+  users.forEach(user => {
+    const progress = allProgress[user.username] || {currentLevel: 1};
+    if (progress.currentLevel > maxLevel) {
+      maxLevel = progress.currentLevel;
+    }
+  });
+  document.getElementById('max-level').textContent = maxLevel;
+  
+  // User progress table
+  const tableBody = document.getElementById('user-progress-table');
+  tableBody.innerHTML = '';
+  
+  users.forEach(user => {
+    const progress = allProgress[user.username] || {currentLevel: 1, correctCount: 0, points: 0};
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${user.name}</td>
+      <td>${user.username}</td>
+      <td>${progress.currentLevel || 1}</td>
+      <td>${progress.correctCount || 0}</td>
+      <td>${progress.points || 0}</td>
+      <td>${new Date(user.lastLogin).toLocaleDateString('bn-BD')}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+function loadUserManagementTable() {
+  const users = JSON.parse(localStorage.getItem('iq_users') || '[]');
+  const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+  const tableBody = document.getElementById('user-management-table');
+  tableBody.innerHTML = '';
+  
+  users.forEach(user => {
+    const progress = allProgress[user.username] || {points: 0};
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${user.name}</td>
+      <td>${user.username}</td>
+      <td>${user.email}</td>
+      <td>${progress.points || 0}</td>
+      <td>
+        <button class="btn-red" onclick="deleteUser('${user.username}')">মুছুন</button>
+        <button class="btn-orange" onclick="toggleAdmin('${user.username}')">${user.isAdmin ? 'এডমিন অপসারণ' : 'এডমিন করুন'}</button>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+function deleteUser(username) {
+  if (confirm(`আপনি কি নিশ্চিত যে আপনি ${username} ব্যবহারকারী মুছতে চান?`)) {
+    const users = JSON.parse(localStorage.getItem('iq_users') || '[]');
+    const filteredUsers = users.filter(user => user.username !== username);
+    localStorage.setItem('iq_users', JSON.stringify(filteredUsers));
+    
+    // Also remove user progress
+    const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+    delete allProgress[username];
+    localStorage.setItem('iq_progress', JSON.stringify(allProgress));
+    
+    loadUserManagementTable();
+    loadAdminStats();
+    alert('ব্যবহারকারী মুছে ফেলা হয়েছে');
+  }
+}
+
+function toggleAdmin(username) {
+  const users = JSON.parse(localStorage.getItem('iq_users') || '[]');
+  const userIndex = users.findIndex(user => user.username === username);
+  
+  if (userIndex !== -1) {
+    users[userIndex].isAdmin = !users[userIndex].isAdmin;
+    localStorage.setItem('iq_users', JSON.stringify(users));
+    loadUserManagementTable();
+    alert(`এডমিন স্ট্যাটাস পরিবর্তন করা হয়েছে`);
+  }
+}
+
+function addNewUser() {
+  const name = prompt('নতুন ব্যবহারকারীর নাম লিখুন:');
+  if (!name) return;
+  
+  const username = prompt('ইউজারনেম লিখুন:');
+  if (!username) return;
+  
+  // Check if username already exists
+  const users = JSON.parse(localStorage.getItem('iq_users') || '[]');
+  if (users.some(user => user.username === username)) {
+    alert('এই ইউজারনেমটি ইতিমধ্যে নেওয়া হয়েছে');
+    return;
+  }
+  
+  const email = prompt('ইমেইল লিখুন:');
+  if (!email) return;
+  
+  const password = prompt('পাসওয়ার্ড লিখুন:');
+  if (!password) return;
+  
+  const newUser = {
+    name,
+    username,
+    email,
+    pass: password,
+    pic: null,
+    isAdmin: false,
+    lastLogin: new Date().toISOString()
+  };
+  
+  users.push(newUser);
+  localStorage.setItem('iq_users', JSON.stringify(users));
+  
+  // Create progress entry for new user
+  const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+  allProgress[username] = {currentLevel: 1, correctCount: 0, points: 0, levels: {}};
+  localStorage.setItem('iq_progress', JSON.stringify(allProgress));
+  
+  loadUserManagementTable();
+  loadAdminStats();
+  alert('নতুন ব্যবহারকারী যোগ করা হয়েছে');
+}
+
+function initializeLevelSelector() {
+  const selector = document.getElementById('level-select');
+  selector.innerHTML = '<option value="">লেভেল নির্বাচন করুন</option>';
+  
+  for (let i = 1; i <= TOTAL_LEVELS; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = `লেভেল ${i}`;
+    selector.appendChild(option);
+  }
+}
+
+function loadQuestionsForLevel() {
+  const level = parseInt(document.getElementById('level-select').value);
+  if (!level) return;
+  
+  const questions = JSON.parse(localStorage.getItem('iq_questions') || JSON.stringify(QUESTIONS));
+  const levelData = questions.find(q => q.level === level) || {level, qs: []};
+  
+  const questionsList = document.getElementById('questions-list');
+  questionsList.innerHTML = '';
+  
+  levelData.qs.forEach((question, index) => {
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'question-item';
+    questionDiv.innerHTML = `
+      <h4>প্রশ্ন ${index + 1} (${POINTS_PER_QUESTION} পয়েন্ট)</h4>
+      <p><strong>ইংরেজি:</strong> ${question.en}</p>
+      <p><strong>বাংলা:</strong> ${question.bn}</p>
+      <p><strong>উত্তর:</strong> ${question.answer}</p>
+      <div style="margin-top:10px">
+        <button class="btn-red" onclick="deleteQuestion(${level}, ${index})">মুছুন</button>
+        <button class="btn-primary" onclick="editQuestion(${level}, ${index})">সম্পাদনা</button>
+      </div>
+    `;
+    questionsList.appendChild(questionDiv);
+  });
+  
+  if (levelData.qs.length === 0) {
+    questionsList.innerHTML = '<p>এই লেভেলে কোনো প্রশ্ন নেই</p>';
+  }
+}
+
+function deleteQuestion(level, index) {
+  if (confirm('আপনি কি নিশ্চিত যে আপনি এই প্রশ্নটি মুছতে চান?')) {
+    const questions = JSON.parse(localStorage.getItem('iq_questions') || JSON.stringify(QUESTIONS));
+    const levelIndex = questions.findIndex(q => q.level === level);
+    
+    if (levelIndex !== -1) {
+      questions[levelIndex].qs.splice(index, 1);
+      localStorage.setItem('iq_questions', JSON.stringify(questions));
+      loadQuestionsForLevel();
+      alert('প্রশ্ন মুছে ফেলা হয়েছে');
+    }
+  }
+}
+
+function editQuestion(level, index) {
+  const questions = JSON.parse(localStorage.getItem('iq_questions') || JSON.stringify(QUESTIONS));
+  const levelIndex = questions.findIndex(q => q.level === level);
+  const question = questions[levelIndex].qs[index];
+  
+  const newEn = prompt('ইংরেজি প্রশ্ন:', question.en);
+  if (newEn === null) return;
+  
+  const newBn = prompt('বাংলা প্রশ্ন:', question.bn);
+  if (newBn === null) return;
+  
+  const newAnswer = prompt('উত্তর:', question.answer);
+  if (newAnswer === null) return;
+  
+  questions[levelIndex].qs[index] = {
+    en: newEn,
+    bn: newBn,
+    answer: newAnswer
+  };
+  
+  localStorage.setItem('iq_questions', JSON.stringify(questions));
+  loadQuestionsForLevel();
+  alert('প্রশ্ন আপডেট করা হয়েছে');
+}
+
+function addNewQuestion() {
+  const level = parseInt(document.getElementById('level-select').value);
+  if (!level) {
+    alert('প্রথমে একটি লেভেল নির্বাচন করুন');
+    return;
+  }
+  
+  const en = prompt('ইংরেজি প্রশ্ন লিখুন:');
+  if (!en) return;
+  
+  const bn = prompt('বাংলা প্রশ্ন লিখুন:');
+  if (!bn) return;
+  
+  const answer = prompt('উত্তর লিখুন:');
+  if (!answer) return;
+  
+  const questions = JSON.parse(localStorage.getItem('iq_questions') || JSON.stringify(QUESTIONS));
+  let levelIndex = questions.findIndex(q => q.level === level);
+  
+  if (levelIndex === -1) {
+    // Create new level
+    questions.push({level, qs: []});
+    levelIndex = questions.length - 1;
+  }
+  
+  questions[levelIndex].qs.push({
+    en,
+    bn,
+    answer
+  });
+  
+  localStorage.setItem('iq_questions', JSON.stringify(questions));
+  loadQuestionsForLevel();
+  alert('নতুন প্রশ্ন যোগ করা হয়েছে');
+}
+
+// Initialize default admin user if not exists
+function initializeDefaultAdmin() {
+  const users = JSON.parse(localStorage.getItem('iq_users') || '[]');
+  
+  // Check if admin user exists
+  if (!users.some(user => user.username === 'admin')) {
+    const adminUser = {
+      name: 'এডমিন',
+      username: 'admin',
+      email: 'admin@example.com',
+      pass: 'admin123',
+      pic: null,
+      isAdmin: true,
+      lastLogin: new Date().toISOString()
+    };
+    
+    users.push(adminUser);
+    localStorage.setItem('iq_users', JSON.stringify(users));
+    
+    // Create progress for admin
+    const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+    allProgress['admin'] = {currentLevel: 1, correctCount: 0, points: 0, levels: {}};
+    localStorage.setItem('iq_progress', JSON.stringify(allProgress));
+    
+    console.log('ডিফল্ট এডমিন ব্যবহারকারী তৈরি হয়েছে: ইউজারনেম - admin, পাসওয়ার্ড - admin123');
+  }
+}
+
+// Initialize default questions if not exists
+function initializeDefaultQuestions() {
+  if (!localStorage.getItem('iq_questions')) {
+    localStorage.setItem('iq_questions', JSON.stringify(QUESTIONS));
+  }
+}
+
+// Initialize on page load
+window.onload = function() {
+  initializeDefaultAdmin();
+  initializeDefaultQuestions();
+};
+
+/* --- Quiz Functions --- */
+function openLevel(level) {
+  const questions = JSON.parse(localStorage.getItem('iq_questions') || JSON.stringify(QUESTIONS));
+  const levelData = questions.find(q => q.level === level);
+  
+  if (!levelData || levelData.qs.length === 0) {
+    alert('এই লেভেলে কোনো প্রশ্ন নেই');
+    return;
+  }
+  
+  document.getElementById('quiz-title').textContent = `Level ${level}`;
+  const qArea = document.getElementById('q-area');
+  qArea.innerHTML = '';
+  
+  levelData.qs.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '15px';
+    div.innerHTML = `
+      <p><strong>প্রশ্ন ${i+1}:</strong> ${q.bn}</p>
+      <p class="small">(এই প্রশ্নের জন্য ${POINTS_PER_QUESTION} পয়েন্ট)</p>
+      <input type="text" id="answer-${i}" placeholder="উত্তর লিখুন">
+    `;
+    qArea.appendChild(div);
+  });
+  
+  document.getElementById('quiz-card').style.display = '';
+  document.getElementById('quiz-msg').textContent = '';
+}
+
+function submitAnswers() {
+  const level = parseInt(document.getElementById('quiz-title').textContent.replace('Level ', ''));
+  const questions = JSON.parse(localStorage.getItem('iq_questions') || JSON.stringify(QUESTIONS));
+  const levelData = questions.find(q => q.level === level);
+  
+  let correctCount = 0;
+  let pointsEarned = 0;
+  
+  levelData.qs.forEach((q, i) => {
+    const answer = document.getElementById(`answer-${i}`).value.trim().toLowerCase();
+    if (answer === q.answer.toLowerCase()) {
+      correctCount++;
+      pointsEarned += POINTS_PER_QUESTION;
+    }
+  });
+  
+  const user = JSON.parse(localStorage.getItem('current_user') || 'null');
+  const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+  const progress = allProgress[user.username] || {currentLevel: 1, correctCount: 0, points: 0, levels: {}};
+  
+  // Update progress
+  if (correctCount === levelData.qs.length) {
+    progress.currentLevel = Math.max(progress.currentLevel, level + 1);
+  }
+  
+  progress.correctCount = (progress.correctCount || 0) + correctCount;
+  progress.points = (progress.points || 0) + pointsEarned;
+  progress.levels[level] = {completed: true, score: correctCount};
+  
+  allProgress[user.username] = progress;
+  localStorage.setItem('iq_progress', JSON.stringify(allProgress));
+  
+  document.getElementById('quiz-msg').textContent = 
+    `আপনি ${correctCount} টি প্রশ্নের সঠিক উত্তর দিয়েছেন ${levelData.qs.length} টির মধ্যে! ${pointsEarned} পয়েন্ট অর্জিত হয়েছে!`;
+  
+  if (correctCount === levelData.qs.length) {
+    document.getElementById('quiz-msg').textContent += ' পরবর্তী লেভেল আনলক করা হয়েছে!';
+  }
+}
+
+function closeQuizView() {
+  document.getElementById('quiz-card').style.display = 'none';
+  renderLevels();
+}
+
+function resetProgress() {
+  if (confirm('আপনি কি নিশ্চিত যে আপনি আপনার অগ্রগতি রিসেট করতে চান?')) {
+    const user = JSON.parse(localStorage.getItem('current_user') || 'null');
+    const allProgress = JSON.parse(localStorage.getItem('iq_progress') || '{}');
+    allProgress[user.username] = {currentLevel: 1, correctCount: 0, points: 0, levels: {}};
+    localStorage.setItem('iq_progress', JSON.stringify(allProgress));
+    renderProfile();
+    alert('আপনার অগ্রগতি রিসেট করা হয়েছে');
+  }
+}
+</script>
+</body>
+</html
